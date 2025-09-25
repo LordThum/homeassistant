@@ -30,3 +30,9 @@ blueprint:
       default: []
       selector:
         action: {}
+    button_2_entity:
+      name: Entity Button 2
+      description: Entity that is controlled by Button 2
+      default: []
+      selector:
+        action: {}
