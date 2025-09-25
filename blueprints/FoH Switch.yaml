@@ -24,20 +24,21 @@ blueprint:
           unit_of_measurement: milliseconds
           mode: box
           step: 10.0
-    input:
-      name: Buttons
-      buttons_left_entity:
-        name: Entity Left Side
-        description: Entity that is controlled by left Side
-        default: []
-        selector:
-          entity: 
-      buttons_right_entity:
-        name: Entity Right Side
-        description: Entity that is controlled by right Side
-        default: []
-        selector:
-          entity: 
+    buttons:
+      input:
+        name: Buttons
+        buttons_left_entity:
+          name: Entity Left Side
+          description: Entity that is controlled by left Side
+          default: []
+          selector:
+            entity: 
+        buttons_right_entity:
+          name: Entity Right Side
+          description: Entity that is controlled by right Side
+          default: []
+          selector:
+            entity: 
         
 mode: restart
 max_exceeded: silent
