@@ -29,10 +29,10 @@ blueprint:
       description: Entity that is controlled by Button 1
       default: []
       selector:
-        entity: {}
+        entity: 
     button_2_entity:
       name: Entity Button 2
       description: Entity that is controlled by Button 2
       default: []
       selector:
-        entity: {}
+        entity: 
