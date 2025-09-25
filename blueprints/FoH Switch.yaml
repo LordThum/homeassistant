@@ -25,6 +25,7 @@ blueprint:
           mode: box
           step: 10.0
     buttons:
+      name: Buttons
       input:
         name: Buttons
         buttons_left_entity:
