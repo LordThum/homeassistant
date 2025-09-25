@@ -36,4 +36,3 @@ blueprint:
       default: []
       selector:
         entity: {}
-        action: {}
