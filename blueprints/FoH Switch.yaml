@@ -2,6 +2,7 @@ blueprint:
   domain: automation
   name: FoH Switch
   input:
+    name: Basics
     controller:
       name: (Zigbee2MQTT) Controller Name
       description: The name of the controller as defined in z2m (e.g. Livingroom Switch)
@@ -23,19 +24,20 @@ blueprint:
           unit_of_measurement: milliseconds
           mode: box
           step: 10.0
-    
-    buttons_left_entity:
-      name: Entity Left Side
-      description: Entity that is controlled by left Side
-      default: []
-      selector:
-        entity: 
-    buttons_right_entity:
-      name: Entity Right Side
-      description: Entity that is controlled by right Side
-      default: []
-      selector:
-        entity: 
+    input:
+      name: Buttons
+      buttons_left_entity:
+        name: Entity Left Side
+        description: Entity that is controlled by left Side
+        default: []
+        selector:
+          entity: 
+      buttons_right_entity:
+        name: Entity Right Side
+        description: Entity that is controlled by right Side
+        default: []
+        selector:
+          entity: 
         
 mode: restart
 max_exceeded: silent
