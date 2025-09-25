@@ -24,15 +24,74 @@ blueprint:
           mode: box
           step: 10.0
     
-    button_1_entity:
-      name: Entity Button 1
-      description: Entity that is controlled by Button 1
+    buttons_left_entity:
+      name: Entity Left Side
+      description: Entity that is controlled by left Side
       default: []
       selector:
         entity: 
-    button_2_entity:
-      name: Entity Button 2
-      description: Entity that is controlled by Button 2
+    buttons_right_entity:
+      name: Entity Right Side
+      description: Entity that is controlled by right Side
       default: []
       selector:
         entity: 
+        
+mode: restart
+max_exceeded: silent
+variables:
+  hold_delay: !input hold_delay
+trigger_variables:
+  base_topic: !input base_topic
+  controller: !input controller
+trigger:
+  - platform: mqtt
+    topic: "{{ base_topic ~ '/' ~ controller }}"
+condition:
+  - condition: template
+    value_template:
+      "{{\n  ('release_' in trigger.payload_json.action and trigger.payload_json.elapsed
+      is defined)\n  or 'press_' in trigger.payload_json.action\n}}\n"
+
+action:
+  - variables:
+      controller: !input controller
+  - choose:
+      # Button pressed
+      - conditions:
+          '{{ "release_" in trigger.payload_json.action and trigger.payload_json.elapsed
+          | int < hold_delay }}'
+        sequence:
+          - choose:
+                # Left
+              - conditions: '{{ trigger.payload_json.action == "release_1" }}'
+                sequence: !input buttons_left_entity
+              - conditions: '{{ trigger.payload_json.action == "release_2" }}'
+                sequence: !input buttons_left_entity
+                # Right
+              - conditions: '{{ trigger.payload_json.action == "release_3" }}'
+                sequence: !input buttons_right_entity
+              - conditions: '{{ trigger.payload_json.action == "release_4" }}'
+                sequence: !input buttons_right_entity
+
+      # Button held
+      # - conditions: '{{ "press_" | string in trigger.payload_json.action }}'
+      #   sequence:
+      #     - delay:
+      #         milliseconds: !input hold_delay
+      #     - choose:
+      #         - conditions: '{{ trigger.payload_json.action == "press_1" }}'
+      #           sequence: !input button_1_held
+      #         - conditions: '{{ trigger.payload_json.action == "press_2" }}'
+      #           sequence: !input button_2_held
+
+      # Button released
+      # - conditions:
+      #     '{{ "release_" in trigger.payload_json.action and trigger.payload_json.elapsed
+      #     | int > hold_delay }}'
+      #   sequence:
+      #     - choose:
+      #         - conditions: '{{ trigger.payload_json.action == "release_1" }}'
+      #           sequence: !input button_1_released
+      #         - conditions: '{{ trigger.payload_json.action == "release_2" }}'
+      #           sequence: !input button_2_released
