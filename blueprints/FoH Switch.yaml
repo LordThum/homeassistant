@@ -1,0 +1,32 @@
+blueprint:
+  domain: automation
+  name: FoH Switch
+  input:
+    controller:
+      name: (Zigbee2MQTT) Controller Name
+      description: The name of the controller as defined in z2m (e.g. Livingroom Switch)
+      default: ""
+    base_topic:
+      name: (Zigbee2MQTT) Base mqtt topic
+      description: The base topic as configured in z2m
+      default: zigbee2mqtt
+    hold_delay:
+      name: Hold delay
+      description:
+        If the button has been held more than the configured Hold delay,
+        the corresponding held action is triggered.
+      default: 500
+      selector:
+        number:
+          min: 100.0
+          max: 1000.0
+          unit_of_measurement: milliseconds
+          mode: box
+          step: 10.0
+    
+    button_1_entity:
+      name: Entity Button 1
+      description: Entity that is controlled by Button 1
+      default: []
+      selector:
+        action: {}
