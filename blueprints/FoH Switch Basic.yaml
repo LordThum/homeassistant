@@ -41,7 +41,7 @@ blueprint:
           reorder: false
           multiple: false
           domain: light
-  source_url: https://github.com/LordThum/homeassistant/blob/main/blueprints/FoH%20Switch.yaml
+
 mode: restart
 max_exceeded: silent
 variables:
@@ -54,98 +54,133 @@ trigger:
     topic: "{{ base_topic ~ '/' ~ controller }}"
 condition:
   - condition: template
-    value_template:
-      "{{\n  ('release_' in trigger.payload_json.action and trigger.payload_json.elapsed
-      is defined)\n  or 'press_' in trigger.payload_json.action\n}}\n"
+    value_template: >
+      {{
+        ((trigger.payload_json.elapsed is defined and
+        trigger.payload_json.elapsed > hold_delay) or
+        trigger.payload_json.elapsed is not defined) and
+        trigger.payload_json.action != Null
+      }}
+
 
 action:
-- variables:
-    controller: !input controller
-    left_entity: !input buttons_left_entity
-    right_entity: buttons_right_entity
-- choose:
-  - conditions: '{{ "release_" in trigger.payload_json.action and trigger.payload_json.elapsed
-      | int < hold_delay }}'
-    sequence:
-    - choose:
-      # Press
-      - conditions: '{{ trigger.payload_json.action == "release_1" }}'
-        sequence: 
-          - service: light.turn_on
-            target: 
-              entity_id: !input buttons_left_entity
-      - conditions: '{{ trigger.payload_json.action == "release_2" }}'
-        sequence: 
-          - service: light.turn_off
-            target:
-              entity_id: !input buttons_left_entity
-      - conditions: '{{ trigger.payload_json.action == "release_3" }}'
-        sequence: 
-          - service: light.turn_on
-            target:
-              entity_id: !input buttons_right_entity
-      - conditions: '{{ trigger.payload_json.action == "release_4" }}'
-        sequence: 
-          - service: light.turn_off
-            target:
-              entity_id: !input buttons_right_entity
-        
-      # Hold
+  - variables:
+      controller: !input "controller"
+      left_entity: !input buttons_left_entity
+      right_entity: !input buttons_right_entity
+  - choose:
       - conditions: '{{ "press_" | string in trigger.payload_json.action }}'
         sequence:
-          - delay:
+          - wait_for_trigger:
+              - platform: mqtt
+                topic: "{{ base_topic ~ '/' ~ controller ~ '/action' }}"
+                payload: release_1
+              - platform: mqtt
+                topic: "{{ base_topic ~ '/' ~ controller ~ '/action' }}"
+                payload: release_2
+              - platform: mqtt
+                topic: "{{ base_topic ~ '/' ~ controller ~ '/action' }}"
+                payload: release_3
+              - platform: mqtt
+                topic: "{{ base_topic ~ '/' ~ controller ~ '/action' }}"
+                payload: release_4
+            timeout:
               milliseconds: !input "hold_delay"
-          - choose:
-              - conditions: '{{ trigger.payload_json.action == "press_1" }}'
-                sequence: 
-                  - service: mqtt.publish
-                    data:
-                      payload: '{"brightness_move_onoff": 51 }'
-                      topic: "zigbee2mqtt/{{ state_attr(left_entity, 'friendly_name') }}/set"
-              - conditions: '{{ trigger.payload_json.action == "press_2" }}'
-                sequence: 
-                  - service: mqtt.publish
-                    data:
-                      payload: '{"brightness_move_onoff": -51 }'
-                      topic: "zigbee2mqtt/{{ state_attr(left_entity, 'friendly_name') }}/set"
-              - conditions: '{{ trigger.payload_json.action == "press_3" }}'
-                sequence: 
-                  - service: mqtt.publish
-                    data:
-                      payload: '{"brightness_move_onoff": 51 }'
-                      topic: "zigbee2mqtt/{{ state_attr(right_entity, 'friendly_name') }}/set"
-              - conditions: '{{ trigger.payload_json.action == "press_4" }}'
-                sequence: 
-                  - service: mqtt.publish
-                    data:
-                      payload: '{"brightness_move_onoff": -51 }'
-                      topic: "zigbee2mqtt/{{ state_attr(right_entity, 'friendly_name') }}/set"
 
-      # Release
-      - conditions: '{{ "release_" in trigger.payload_json.action and trigger.payload_json.elapsed | int > hold_delay }}'
-        sequence:
           - choose:
-              - conditions: '{{ trigger.payload_json.action == "release_1" }}'
-                sequence: 
-                  - service: mqtt.publish
-                    data:
-                      payload: '{"brightness_move": "stop"}'
-                      topic: "zigbee2mqtt/{{ state_attr(left_entity, 'friendly_name') }}/set"
-              - conditions: '{{ trigger.payload_json.action == "release_2" }}'
-                sequence: 
-                  - service: mqtt.publish
-                    data:
-                      payload: '{"brightness_move": "stop"}'
-                      topic: "zigbee2mqtt/{{ state_attr(left_entity, 'friendly_name') }}/set"
-              - conditions: '{{ trigger.payload_json.action == "release_3" }}'
-                sequence: 
-                  - service: mqtt.publish
-                    data:
-                      payload: '{"brightness_move": "stop"}'
-                      topic: "zigbee2mqtt/{{ state_attr(right_entity, 'friendly_name') }}/set"
-              - conditions: '{{ trigger.payload_json.action == "release_4" }}'
-                sequence: 
-                  - service: mqtt.publish
-                    data:
-                      payload: '{"brightness_move": "stop"}'
-                      topic: "zigbee2mqtt/{{ state_attr(right_entity, 'friendly_name') }}/set"
+            # Button pressed
+            - conditions: '{{ trigger.payload_json.action == "press_1" and wait.trigger.payload == "release_1" }}'
+              sequence:
+              - action: mqtt.publish
+                metadata: {}
+                data:
+                  evaluate_payload: false
+                  qos: 0
+                  retain: false
+                  topic: zigbee2mqtt/{{ state_attr(left_entity, 'friendly_name') }}/set
+                  payload: "{\"state\": \"on\"}"
+            - conditions: '{{ trigger.payload_json.action == "press_2" and wait.trigger.payload == "release_2" }}'
+              sequence:
+              - action: mqtt.publish
+                metadata: {}
+                data:
+                  evaluate_payload: false
+                  qos: 0
+                  retain: false
+                  topic: zigbee2mqtt/{{ state_attr(left_entity, 'friendly_name') }}/set
+                  payload: "{\"state\": \"off\"}"
+            - conditions: '{{ trigger.payload_json.action == "press_3" and wait.trigger.payload == "release_3" }}'
+              sequence:
+              - action: mqtt.publish
+                metadata: {}
+                data:
+                  evaluate_payload: false
+                  qos: 0
+                  retain: false
+                  topic: zigbee2mqtt/{{ state_attr(right_entity, 'friendly_name') }}/set
+                  payload: "{\"state\": \"on\"}"
+            - conditions: '{{ trigger.payload_json.action == "press_4" and wait.trigger.payload == "release_4" }}'
+              sequence:
+              - action: mqtt.publish
+                metadata: {}
+                data:
+                  evaluate_payload: false
+                  qos: 0
+                  retain: false
+                  topic: zigbee2mqtt/{{ state_attr(right_entity, 'friendly_name') }}/set
+                  payload: "{\"state\": \"off\"}"
+
+            # Button hold
+            - conditions: '{{ trigger.payload_json.action == "press_1" and wait.trigger == None }}'
+              sequence: 
+                - service: mqtt.publish
+                  data:
+                    payload: '{"brightness_move_onoff": 51 }'
+                    topic: "zigbee2mqtt/{{ state_attr(left_entity, 'friendly_name') }}/set"
+            - conditions: '{{ trigger.payload_json.action == "press_2" and wait.trigger == None }}'
+              sequence: 
+                - service: mqtt.publish
+                  data:
+                    payload: '{"brightness_move_onoff": -51 }'
+                    topic: "zigbee2mqtt/{{ state_attr(left_entity, 'friendly_name') }}/set"
+            - conditions: '{{ trigger.payload_json.action == "press_3" and wait.trigger == None }}'
+              sequence: 
+                - service: mqtt.publish
+                  data:
+                    payload: '{"brightness_move_onoff": 51 }'
+                    topic: "zigbee2mqtt/{{ state_attr(right_entity, 'friendly_name') }}/set"
+            - conditions: '{{ trigger.payload_json.action == "press_4" and wait.trigger == None }}'
+              sequence: 
+                - service: mqtt.publish
+                  data:
+                    payload: '{"brightness_move_onoff": -51 }'
+                    topic: "zigbee2mqtt/{{ state_attr(right_entity, 'friendly_name') }}/set"
+
+      # Button released after long press
+      - conditions: '{{ "release_" | string in trigger.payload_json.action }}'
+        sequence:
+        - choose:
+          - conditions: '{{ trigger.payload_json.action == "release_1" }}'
+            sequence: 
+              - service: mqtt.publish
+                data:
+                  payload: '{"brightness_move": "stop"}'
+                  topic: "zigbee2mqtt/{{ state_attr(left_entity, 'friendly_name') }}/set"
+          - conditions: '{{ trigger.payload_json.action == "release_2" }}'
+            sequence: 
+              - service: mqtt.publish
+                data:
+                  payload: '{"brightness_move": "stop"}'
+                  topic: "zigbee2mqtt/{{ state_attr(left_entity, 'friendly_name') }}/set"
+          - conditions: '{{ trigger.payload_json.action == "release_3" }}'
+            sequence: 
+              - service: mqtt.publish
+                data:
+                  payload: '{"brightness_move": "stop"}'
+                  topic: "zigbee2mqtt/{{ state_attr(right_entity, 'friendly_name') }}/set"
+          - conditions: '{{ trigger.payload_json.action == "release_4" }}'
+            sequence: 
+              - service: mqtt.publish
+                data:
+                  payload: '{"brightness_move": "stop"}'
+                  topic: "zigbee2mqtt/{{ state_attr(right_entity, 'friendly_name') }}/set"
